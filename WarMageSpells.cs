@@ -114,16 +114,15 @@ namespace DawnsburyWarMage
 {
     public class WarMageSpells
     {
-        public static SpellId shieldingFormationId;
-        public static CombatAction GenerateShieldingFormationSpell()
-        {
-             CombatAction shieldingFormationSpell = Spells.CreateModern(IllustrationName.ShieldSpell, "Shielding Formation", [Trait.Concentrate, Trait.Focus, Trait.Force, Trait.Manipulate, Trait.Wizard], "You conjure magical shields of force to protect your allies around you.", "You and each ally who ends their turn within the emanation gain a +1 circumstance bonus to AC until they leave the emanation or the spell ends, whichever comes first. If an ally takes physical damage or damage from a spell or magical effect while being granted this bonus, they can choose to end the bonus for themselves as a free action to gain resistance 10 to all damage against the triggering damage. If they do, they become temporarily immune to the effects of shielding formation for 10 minutes. You can do the same by spending your reaction; if you do, you can’t cast shielding formation again for 10 minutes, though you can continue Sustaining the benefits for others.", Target.Self(), 4, null);
-            shieldingFormationSpell.WithActionCost(2);
-            shieldingFormationSpell.WithSoundEffect(SfxName.ShieldSpell);
-            shieldingFormationSpell.Illustration = WarMage.ShieldingFormationIllustration;
 
+        public static SpellId shieldingFormationId;
+
+        private static QEffect CreateShieldingFormationEffect(Creature? source)
+        {
             QEffect shieldingFormationDisabler = new QEffect("shieldingFormationDisabler", "");
             shieldingFormationDisabler.ExpiresAt = ExpirationCondition.Never;
+            shieldingFormationDisabler.Source = source;
+            shieldingFormationDisabler.Innate = false;
 
             QEffect shieldingFormationEffect = new QEffect("Shielding Formation", "You gain a +1 circumstance bonus to AC until you leave the emanation.");
             shieldingFormationEffect.CountsAsABuff = true;
@@ -134,7 +133,6 @@ namespace DawnsburyWarMage
                 bool result = await defender.AskForConfirmation(WarMage.ShieldingFormationIllustration, $"You are about to take {damageStuff.Amount} damage. End the effects of Shielding Formation on yourself to gain resistance 10 to all damage against the triggering attack?\nYou will become immune to the effects of Shielding Formation until the end of this encounter.", "Confirm");
                 if (result)
                 {
-                    shieldingFormationDisabler.Source = qf.Source;
                     defender.AddQEffect(shieldingFormationDisabler);
                     qf.ExpiresAt = ExpirationCondition.Ephemeral;
                     return new ResistanceAddedDamageModification(10, "Shielding Formation", defender.WeaknessAndResistance.Resistances);
@@ -154,15 +152,32 @@ namespace DawnsburyWarMage
                     });
                 }
             };
+            shieldingFormationEffect.Source = source;
+            return shieldingFormationEffect;
+        }
 
+        private static QEffect CreateShieldingFormationGranter(Creature? source)
+        {
             QEffect shieldingFormationGranter = new QEffect("shieldingFormationGranter", "");
-            shieldingFormationGranter.EndOfYourTurnBeneficialEffect = async delegate (QEffect self, Creature creature)
+            shieldingFormationGranter.Source = source;
+            shieldingFormationGranter.EndOfYourTurnBeneficialEffect = (QEffect self, Creature creature) =>
             {
-                creature.RemoveAllQEffects(effect => effect.Name == shieldingFormationEffect.Name && effect.Source == self.Source);
-                shieldingFormationEffect.Source = self.Source;
-                creature.AddQEffect(shieldingFormationEffect);
+                creature.RemoveAllQEffects(effect => effect.Name == "Shielding Formation" && effect.Source == self.Source);
+                creature.AddQEffect(CreateShieldingFormationEffect(self.Source));
+                return Task.CompletedTask;
             };
             shieldingFormationGranter.ExpiresAt = ExpirationCondition.Ephemeral;
+            shieldingFormationGranter.Innate = false;
+            return shieldingFormationGranter;
+        }
+        public static CombatAction GenerateShieldingFormationSpell()
+        {
+             CombatAction shieldingFormationSpell = Spells.CreateModern(IllustrationName.ShieldSpell, "Shielding Formation", [Trait.Concentrate, Trait.Focus, Trait.Force, Trait.Manipulate, Trait.Wizard], "You conjure magical shields of force to protect your allies around you.", "You and each ally who ends their turn within the emanation gain a +1 circumstance bonus to AC until they leave the emanation or the spell ends, whichever comes first. If an ally takes physical damage or damage from a spell or magical effect while being granted this bonus, they can choose to end the bonus for themselves as a free action to gain resistance 10 to all damage against the triggering damage. If they do, they become temporarily immune to the effects of shielding formation for 10 minutes. You can do the same by spending your reaction; if you do, you can’t cast shielding formation again for 10 minutes, though you can continue Sustaining the benefits for others.", Target.Self(), 4, null);
+            shieldingFormationSpell.WithActionCost(2);
+            shieldingFormationSpell.WithSoundEffect(SfxName.ShieldSpell);
+            shieldingFormationSpell.Illustration = WarMage.ShieldingFormationIllustration;
+
+
 
             QEffect shieldingFormationSelfEffect = new QEffect("Shielding Formation", "You gain a +1 circumstance bonus to AC until you leave the emanation.");
             shieldingFormationSelfEffect.CountsAsABuff = true;
@@ -174,8 +189,6 @@ namespace DawnsburyWarMage
                 bool result = await defender.AskToUseReaction($"You are about to take {damageStuff.Amount} damage. End the effects of Shielding Formation on yourself to gain resistance 10 to all damage against the triggering attack?\nYou will become immune to the effects of Shielding Formation until the end of this encounter and won't be able to cast the spell again, though you can sustain it for your allies.");
                 if (result)
                 {
-                    shieldingFormationDisabler.Source = qf.Source;
-                    defender.AddQEffect(shieldingFormationDisabler);
                     qf.ExpiresAt = ExpirationCondition.Ephemeral;
                     return new ResistanceAddedDamageModification(10, "Shielding Formation", defender.WeaknessAndResistance.Resistances);
                 }
@@ -189,8 +202,12 @@ namespace DawnsburyWarMage
                 QEffect qf = new QEffect("shieldingFormationAura", "", ExpirationCondition.Never, self);
                 qf.CannotExpireThisTurn = true;
                 qf.ExpiresAt = ExpirationCondition.ExpiresAtEndOfYourTurn;
-                qf.WhenExpires = (_) =>
+                qf.WhenExpires = (effect) =>
                 {
+                   foreach (Creature target in effect.Owner.Battle.AllCreatures)
+                    {
+                        target.RemoveAllQEffects(eff => (eff.Name == "Shielding Formation" || eff.Name == "shieldingFormationGranter") && eff.Source == self);
+                    }
                     auraAnimation.MoveTo(0f);
                 };
                 qf.StateCheck = (effect) =>
@@ -201,12 +218,11 @@ namespace DawnsburyWarMage
                             target.AddQEffect(shieldingFormationSelfEffect);
                         } else
                         {
-                            shieldingFormationGranter.Source = self;
-                            target.AddQEffect(shieldingFormationGranter);
+                            target.AddQEffect(CreateShieldingFormationGranter(effect.Owner));
                         }
                     };
                     foreach (Creature target in effect.Owner.Battle.AllCreatures.Where((creature) => creature.DistanceTo(effect.Owner) > 6)) {
-                        target.RemoveAllQEffects(eff => eff.Name == "Shielding Formation" && eff.Source == self);
+                        target.RemoveAllQEffects(eff => (eff.Name == "Shielding Formation" || eff.Name == "shieldingFormationGranter") && eff.Source == self);
                     };
                 };
                 self.AddQEffect(qf.WithExpirationSustained(shieldingFormationSpell, self));
