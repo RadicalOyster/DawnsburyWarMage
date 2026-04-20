@@ -18,7 +18,6 @@ using Dawnsbury.Core.Mechanics.Targeting.Targets;
 using Dawnsbury.Core.Possibilities;
 using Dawnsbury.Core.Roller;
 using Dawnsbury.Core.Tiles;
-using Dawnsbury.Mods.DawnniExpanded;
 using WarMage = Dawnsbury.Mods.Ooster.Subclasses.WarMage.DawnsburyWarMage;
 
 namespace DawnsburyWarMage
@@ -116,6 +115,16 @@ namespace DawnsburyWarMage
             return warMageDedicationFeat;
         }
 
+        private static QEffect GenerateDressingTag(Creature owner)
+        {
+            QEffect dressingTag = new QEffect("dressingTag", "");
+            dressingTag.Id = dressingTagId;
+            dressingTag.Innate = false;
+            dressingTag.Source = owner;
+            dressingTag.WithExpirationAtEndOfThisTurn();
+            return dressingTag;
+        }
+
         //Mage's Field Dressing
         public static Feat GenerateFieldDressingFeat()
         { 
@@ -131,14 +140,10 @@ namespace DawnsburyWarMage
                     };
                     if (action.SpellcastingSource != null && action.SpellcastingSource.ClassOfOrigin == Trait.Wizard && !action.HasTrait(Trait.Cantrip) && !action.HasTrait(Trait.Focus))
                     {
-                        QEffect dressingTag = new QEffect("dressingTag", "");
-                        dressingTag.ExpiresAt = ExpirationCondition.ExpiresAtEndOfAnyTurn;
-                        dressingTag.Id = dressingTagId;
-                        dressingTag.Innate = false;
                         foreach (Creature target in action.ChosenTargets.ChosenCreatures)
                         {
                             if (action.ChosenTargets.AffectedThisCreatureSomehow(action, target));
-                            target.AddQEffect(dressingTag);
+                            target.AddQEffect(GenerateDressingTag(qf.Owner));
                         }
                     }
                 };
@@ -210,12 +215,12 @@ namespace DawnsburyWarMage
                     }
 
 
-                    if (!user.PersistentUsedUpResources.UsedUpActions.Contains("BattleMedicine:" + target.Name))
+                    if (!target.PersistentUsedUpResources.UsedUpActions.Contains($"BattleMedicineFrom:{user.BaseName}"))
                     {
                         return Usability.Usable;
                     }
 
-                    else if (!user.PersistentUsedUpResources.UsedUpActions.Contains("BattleMedicineMedicArchetypePassed") && user.PersistentCharacterSheet.Calculated.AllFeats.Contains(ArchetypeMedic.MedicDedicationFeat))
+                    else if (!user.PersistentUsedUpResources.UsedUpActions.Contains("BattleMedicineImmunityBypassUsed") && user.PersistentCharacterSheet.Calculated.AllFeats.Any(feat => feat.Name == "Medic Dedication"))
                     {
                         return Usability.Usable;
                     }

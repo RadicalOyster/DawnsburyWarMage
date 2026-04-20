@@ -13,7 +13,6 @@ using Dawnsbury.Core.Mechanics.Targeting;
 using WarMage = Dawnsbury.Mods.Ooster.Subclasses.WarMage.DawnsburyWarMage;
 using Dawnsbury.Core.Animations;
 using Microsoft.Xna.Framework;
-using Dawnsbury.Core.Mechanics.Targeting.Targets;
 using Dawnsbury.Auxiliary;
 
 public class ResistanceAddedDamageModification : DamageModification
