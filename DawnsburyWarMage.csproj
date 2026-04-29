@@ -20,6 +20,12 @@
     <Reference Include="Dawnsbury.Mods.DawnniExpanded">
       <HintPath>E:\SteamLibrary\steamapps\workshop\content\2693730\3163146733\CustomMods\Dawnsbury.Mods.DawnniExpanded.dll</HintPath>
     </Reference>
+    <Reference Include="Dawnsbury.Mods.LoresAndWeaknesses">
+      <HintPath>E:\SteamLibrary\steamapps\workshop\content\2693730\3710730920\CustomModsV3\Dawnsbury.Mods.LoresAndWeaknesses.dll</HintPath>
+    </Reference>
+    <Reference Include="ExplorationActivities">
+      <HintPath>E:\SteamLibrary\steamapps\workshop\content\2693730\3527574947\CustomMods\ExplorationActivities.dll</HintPath>
+    </Reference>
     <Reference Include="MonoGame.Framework">
       <HintPath>E:\SteamLibrary\steamapps\common\Dawnsbury Days\Data\MonoGame.Framework.dll</HintPath>
     </Reference>

@@ -22,6 +22,7 @@ using WarMage = Dawnsbury.Mods.Ooster.Subclasses.WarMage.DawnsburyWarMage;
 
 namespace DawnsburyWarMage
 {
+    using Dawnsbury.Mods.LoresAndWeaknesses;
     public class WarMageFeats
     {
         public static FeatName warMageDedicationName;
@@ -102,7 +103,7 @@ namespace DawnsburyWarMage
 
             warMageDedicationFeat.WithOnSheet(sheet =>
             {
-                sheet.AddFeat(AllFeats.All.Find(feat => feat.Name == "Additional Lore - Warfare"), null);
+                Lores.GrantAdditionalLore(sheet, Lores.GetRegisteredLore("Warfare Lore", null));
             });
 
             warMageDedicationFeat.WithOnCreature(creature =>
